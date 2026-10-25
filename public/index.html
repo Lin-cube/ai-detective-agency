@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     「AI侦探社」v6 —— 紫色晨光沉浸式改版
+     结构：BackgroundScene(风景+遮罩+双层薄雾) → 顶部导航
+           → Hero 标题 → 搜索卡片(模式/多行输入/上传/开始)
+           → 示例问题 → 办案流程条 → 报告 → 历史卷宗 → 页脚
+     右下角：暂停/播放动态、欣赏背景/返回调查
+     ============================================================ -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI侦探社 · 穿过信息的云海</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== 背景场景：风景层 + 渐变遮罩 + 双层薄雾 ===== -->
+  <div class="bg-scene" id="bgScene" aria-hidden="true">
+    <!-- 风景照片层：Ken Burns 缓慢推镜 -->
+    <img class="bg-photo" src="images/detective-lake.jpg" alt="" draggable="false" />
+    <!-- 对比度渐变遮罩：轻微压暗四角、提亮中上部，保证文字可读但不盖住风景 -->
+    <div class="bg-veil"></div>
+    <!-- 两层半透明薄雾：不同速度水平漂移，制造远近层次 -->
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+  </div>
+
+  <!-- ===== 背景控制（右下角悬浮） ===== -->
+  <div class="bg-controls">
+    <button id="motionBtn" class="ctrl-btn" type="button">⏸ 暂停动态</button>
+    <button id="viewBtn" class="ctrl-btn" type="button">🏞️ 欣赏背景</button>
+  </div>
+
+  <!-- ===== 页面内容（背景之上） ===== -->
+  <div class="page">
+
+    <!-- 1. 顶部导航：品牌 / 中间链接 / 状态与设置 -->
+    <header class="topbar">
+      <div class="brand">🕵️<span>AI侦探社</span></div>
+      <nav class="nav-links">
+        <a href="#desk" id="navExplore">探索</a>
+        <a href="#cabinet" id="navArchive">我的卷宗</a>
+      </nav>
+      <div class="top-actions">
+        <span id="statusLamp" class="lamp lamp-wait">档案核验中…</span>
+        <button id="settingsBtn" class="icon-btn" title="配置搜索与模型 API">⚙️ 设置</button>
+      </div>
+    </header>
+
+    <!-- 2. Hero：中央标题（调查开始后自动收起） -->
+    <section class="hero" id="hero">
+      <h1 class="hero-title">穿过信息的云海，<br />看见<em>有依据的答案</em>。</h1>
+      <p class="hero-sub">带上你的好奇心。我们一起，把问题查清楚。</p>
+    </section>
+
+    <!-- 3. 搜索卡片：奶白悬浮卡 -->
+    <section class="desk-card" id="desk">
+      <!-- 模式页签 -->
+      <nav class="modes">
+        <button class="mode-btn active" data-mode="normal">🔍 普通办案</button>
+        <button class="mode-btn" data-mode="deep">🧭 深度调查</button>
+        <button class="mode-btn" data-mode="watch">📌 持续盯梢</button>
+        <button class="mode-btn" data-mode="screenshot">📸 截图查证</button>
+      </nav>
+      <p id="modeDesc" class="mode-desc">适合日常快查：拆解关键点、多轮搜索、交叉对质后结案。</p>
+
+      <!-- 多行问题输入 -->
+      <textarea id="question" rows="3" maxlength="200"
+                placeholder="把要查的事交给侦探：比如「某发布会门票到底在哪些渠道真卖过？」"></textarea>
+
+      <!-- 截图查证专属：上传区 + 主张/上下文 -->
+      <div id="screenshotBox" class="screenshot-box hidden">
+        <div id="dropZone" class="drop-zone">
+          <input id="imageInput" type="file" accept="image/*" multiple hidden />
+          <div id="dropHint" class="drop-hint">
+            <span class="drop-icon">📸</span>
+            <span>点击选择或拖拽截图（可多选，最多3张）</span>
+          </div>
+          <div id="previewList" class="preview-list hidden"></div>
+        </div>
+        <input id="claimInput" type="text" maxlength="300" placeholder="截图里在传什么说法？（可不填，侦探会先看图认出主张再去查）" />
+        <input id="contextInput" type="text" maxlength="300" placeholder="补充上下文（可选）：时间、平台、聊天背景…" />
+      </div>
+
+      <!-- 盯梢模式提示 -->
+      <div id="watchHint" class="watch-hint hidden">
+        📌 盯梢案件会存入下方「我的卷宗」。点「再次盯梢」，侦探会带着旧卷宗重新走访，输出《变化梳理》。
+      </div>
+
+      <!-- 底部操作行：左=截图上传，右=开始调查 -->
+      <div class="action-row">
+        <label id="uploadBtn" class="upload-btn hidden" for="imageInput">📎 添加截图</label>
+        <button id="fileBtn" class="file-btn">开始调查</button>
+      </div>
+    </section>
+
+    <!-- 4. 示例问题：点击填入，用户确认后才提交 -->
+    <div class="examples" id="examples">
+      <button class="example-chip" type="button">小红书上的美妆产品可信吗？</button>
+      <button class="example-chip" type="button">最近 AI 圈有什么值得注意的新进展？</button>
+      <button class="example-chip" type="button">「喝隔夜水会致癌」是真的吗？</button>
+    </div>
+
+    <!-- 5. 办案流程条（立案后出现） -->
+    <section id="stepsBar" class="steps-bar hidden">
+      <div class="step" data-step="1"><span class="dot"></span>立案</div>
+      <div class="step-line"></div>
+      <div class="step" data-step="2"><span class="dot"></span>走访</div>
+      <div class="step-line"></div>
+      <div class="step" data-step="3"><span class="dot"></span>对质</div>
+      <div class="step-line"></div>
+      <div class="step" data-step="4"><span class="dot"></span>结案</div>
+    </section>
+
+    <!-- 6. 结案报告：实心浅色阅读面板 -->
+    <main id="report" class="report empty">
+      <div class="report-placeholder">
+        <span class="ph-icon">🗞️</span>
+        <p>卷宗空白。把问题交给侦探，<br />它会带着证据回来。</p>
+      </div>
+    </main>
+
+    <!-- 7. 历史卷宗 -->
+    <section class="cabinet" id="cabinet">
+      <h3 class="card-title">🗂️ 我的卷宗</h3>
+      <ul id="caseList" class="case-list"></ul>
+    </section>
+
+    <!-- 8. 页脚 -->
+    <footer class="foot">AI侦探社 · WaytoAGI × 元宝搜索《侦探》赛道参赛作品 · 所有结论均可点开来源查证</footer>
+  </div>
+
+  <!-- ===== 设置面板 ===== -->
+  <div id="settingsMask" class="settings-mask hidden">
+    <div class="settings-card">
+      <h3 class="settings-title">⚙️ 侦探档案配置</h3>
+      <p class="settings-tip">密钥只保存在本机 .env 文件中，不会上传到任何地方。保存后立即生效，无需重启。只填你要修改的项即可，留空的保持不变。</p>
+
+      <p class="group-label">🔎 元宝搜索 · API Key</p>
+      <label class="field-label">API Key（sk-xxxx）</label>
+      <input id="cfgYbKey" type="password" placeholder="当前已配置，留空则不变" autocomplete="off" />
+
+      <p class="group-label">🧠 侦探大脑 · OpenAI 兼容接口</p>
+      <label class="field-label">API 地址（填到 /v1）</label>
+      <input id="cfgBaseUrl" type="text" placeholder="当前已配置，留空则不变" />
+      <label class="field-label">API Key</label>
+      <input id="cfgApiKey" type="password" placeholder="当前已配置，留空则不变" autocomplete="off" />
+      <label class="field-label">模型名</label>
+      <input id="cfgModel" type="text" placeholder="当前已配置，留空则不变" />
+
+      <p id="settingsMsg" class="settings-msg"></p>
+      <div class="settings-actions">
+        <button id="settingsCancel" class="btn-ghost">取消</button>
+        <button id="settingsSave" class="btn-primary">保存档案</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

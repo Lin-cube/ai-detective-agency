@@ -1,0 +1,9 @@
+{
+  "name": "ai-detective-agency",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI侦探社：元宝搜索取证与大模型分析报告",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
